@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手动输入专辑曲名</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background-color: #f0f2f5;
+        }
+        .player-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .input-section {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #34495e;
+            font-weight: 500;
+        }
+        #musicUrl {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        #musicUrl:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            justify-content: center;
+        }
+        button {
+            padding: 0.7rem 1.2rem;
+            border: none;
+            border-radius: 6px;
+            background-color: #3498db;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .status {
+            text-align: center;
+            color: #7f8c8d;
+            margin: 1rem 0;
+            min-height: 1.5rem;
+        }
+        .tips {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .tips h3 {
+            margin-top: 0;
+            color: #34495e;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container">
+        <h1>音乐播放器 - 手动输入地址</h1>
+        
+        <div class="input-section">
+            <label for="musicUrl">音乐文件地址如：爱在西元前/忍者 
+            <input type="text" id="musicUrl" placeholder="例如：11（要区分一下大小写，我也不确定是不是这个11）月的肖邦/枫">
+        </div>
+        
+        <div class="controls">
+            <button id="loadBtn">加载音乐</button>
+            <button id="playBtn" disabled>播放</button>
+            <button id="pauseBtn" disabled>暂停</button>
+            <button id="stopBtn" disabled>停止</button>
+        </div>
+        
+        <div class="status" id="status">请输入音乐地址并点击"加载音乐"</div>
+        
+        <audio id="audioPlayer" hidden></audio>
+        
+        <div class="tips">
+            <h3>使用说明：</h3>
+            <ul>
+                <li>本地文件路径格式：（仅限周杰伦)专辑加取名，比如：依然范特西/爱在西元前</li>
+                <li>网络音乐URL：支持MP3、WAV、OGG等格式的音频链接</li>
+                <li>部分浏览器可能限制访问本地文件，建议使用网络URL测试</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const musicUrlInput = document.getElementById('musicUrl');
+        const loadBtn = document.getElementById('loadBtn');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDisplay = document.getElementById('status');
+        const audioPlayer = document.getElementById('audioPlayer');
+
+        // 加载音乐
+        loadBtn.addEventListener('click', () => {
+            const url = musicUrlInput.value.trim();
+            if (!url) {
+                statusDisplay.textContent = '请输入音乐专辑和名字';
+                return;
+            }
+
+            // 处理本地文件路径（添加file://协议）
+            let audioUrl = url;
+            if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
+                // 处理Windows路径
+                if (audioUrl.includes(':\\')) {
+                    audioUrl = 'file:///' + audioUrl.replace(/\\/g, '/');
+                } else if (audioUrl.startsWith('/')) {
+                    // 处理类Unix绝对路径
+                    audioUrl = 'file://' + audioUrl;
+                }
+            }
+
+            statusDisplay.textContent = '正在加载音乐...';
+            audioPlayer.src = audioUrl;
+            
+            audioPlayer.onloadedmetadata = () => {
+                statusDisplay.textContent = '音乐加载成功，可以播放了';
+                // 启用控制按钮
+                playBtn.disabled = false;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+            };
+            
+            audioPlayer.onerror = (e) => {
+                statusDisplay.textContent = `加载失败: ${getErrorMsg(e.target.error.code)}`;
+                // 禁用控制按钮
+                playBtn.disabled = true;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+            };
+        });
+
+        // 播放音乐
+        playBtn.addEventListener('click', () => {
+            audioPlayer.play();
+            statusDisplay.textContent = '正在播放...';
+        });
+
+        // 暂停音乐
+        pauseBtn.addEventListener('click', () => {
+            audioPlayer.pause();
+            statusDisplay.textContent = '已暂停';
+        });
+
+        // 停止音乐
+        stopBtn.addEventListener('click', () => {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            statusDisplay.textContent = '已停止';
+        });
+
+        // 音乐播放结束
+        audioPlayer.onended = () => {
+            statusDisplay.textContent = '播放结束';
+        };
+
+        // 错误信息处理
+        function getErrorMsg(code) {
+            switch(code) {
+                case 1: return "用户中止";
+                case 2: return "网络错误";
+                case 3: return "解码错误";
+                case 4: return "不支持的音频格式";
+                default: return "未知错误";
+            }
+        }
+    </script>
+</body>
+</html>
