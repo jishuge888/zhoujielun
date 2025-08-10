@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>静态网址音乐播放器</title>
+    <title>周杰伦播放器</title>
     <link href="https://fonts.googleapis.com/css?family=Quicksand:500,700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -260,9 +260,9 @@
         <div class="loader" id="loader">
             <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
         </div>
-        <h1>静态网址音乐播放器</h1>
+        <h1>周杰伦播放器</h1>
         <div class="add-section">
-            <input type="text" id="musicUrl" placeholder="输入音乐地址或相对路径">
+            <input type="text" id="musicUrl" placeholder="输入音乐专辑如：范特西/周杰伦－忍者.mp3">
             <button id="addBtn">添加</button>
         </div>
         <ul id="songList" class="song-list">
@@ -290,8 +290,7 @@
     // ---------- 随机背景图 ----------
     // 假设图片放在“图片”文件夹, 支持jpg/png, 你可以根据实际图片数量修改
     const bgImgs = [
-        '图片/1.jpg','图片/2.jpg','图片/3.jpg','图片/4.jpg','图片/5.jpg','图片/6.jpg',
-        '图片/7.jpg','图片/8.jpg','图片/9.jpg','图片/10.jpg'
+        '图片/1.jpg','图片/2.jpg','图片/3.jpg','图片/4.jpg'
     ];
     function pickRandomBg() {
         return bgImgs[Math.floor(Math.random() * bgImgs.length)];
