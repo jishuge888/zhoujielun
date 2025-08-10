@@ -1,11 +1,9 @@
-非常抱歉，刚才的代码又出现了截断问题，这是我的疏忽。以下是完全完整的版本，包含所有功能的实现：
- 
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>音乐播放器 - 带随机播放功能</title>
+    <title>音乐播放器 - 带随机播放功能（静态网址适配）</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -146,11 +144,11 @@
 </head>
 <body>
     <div class="player-container">
-        <h1>音乐播放器 - 带随机播放</h1>
+        <h1>音乐播放器 - 带随机播放（静态网址适配）</h1>
         
         <div class="input-section">
-            <label for="musicUrl">音乐文件地址（添加到播放列表）</label>
-            <input type="text" id="musicUrl" placeholder="例如：范特西/周杰伦 - 忍者.mp3">
+            <label for="musicUrl">音乐文件地址（添加到播放列表，支持静态资源）</label>
+            <input type="text" id="musicUrl" placeholder="例：https://static.site.com/music/周杰伦 - 忍者.mp3 或 music/周杰伦 - 忍者.mp3">
             <button id="addBtn" style="margin-top: 0.5rem;">添加到播放列表</button>
         </div>
         
@@ -190,10 +188,10 @@
         <div class="tips">
             <h3>使用说明：</h3>
             <ul>
-                <li>输入音乐地址后点击"添加到播放列表"</li>
+                <li>输入音乐地址后点击"添加到播放列表"（支持绝对/相对/静态网址）</li>
                 <li>点击"随机播放"按钮开启/关闭随机模式</li>
-                <li>歌词文件需与音乐文件同名，扩展名为.lrc</li>
-                <li>本地文件建议通过HTTP服务器打开（如VSCode的Live Server）</li>
+                <li>歌词文件需与音乐文件同名，扩展名为.lrc，放在相同目录下（静态网址也需如此）</li>
+                <li>本地文件建议通过HTTP服务器打开，静态网址如 GitHub Pages/CDN 也可用</li>
             </ul>
         </div>
     </div>
@@ -214,100 +212,77 @@
         const lyricsContainer = document.getElementById('lyrics');
         const debugInfo = document.getElementById('debugInfo');
         
-        // 播放列表管理
-        let playlist = [];          // 播放列表
-        let currentIndex = -1;      // 当前播放索引
-        let isRandom = false;       // 是否随机播放
-        let playedIndices = [];     // 已播放过的索引（用于随机模式）
-        
-        // 歌词相关
-        let lyricsData = [];        // 存储解析后的歌词数据
-        let currentLine = -1;       // 当前播放的歌词行
-        
-        // 显示audio元素
+        let playlist = [];
+        let currentIndex = -1;
+        let isRandom = false;
+        let playedIndices = [];
+        let lyricsData = [];
+        let currentLine = -1;
+
         audioPlayer.hidden = false;
-        
-        // 添加音乐到播放列表
+
         addBtn.addEventListener('click', () => {
-            const url = musicUrlInput.value.trim();
+            let url = musicUrlInput.value.trim();
             if (!url) {
                 statusDisplay.textContent = '请输入音乐地址';
                 return;
             }
-            
-            // 处理音乐路径
+            // 支持静态网址和相对路径
             let audioUrl = url;
-            if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://') && !audioUrl.startsWith('file://')) {
-                audioUrl = './' + audioUrl.replace(/^\/+/, '');
+            // 如果不是以 http(s):// 或 // 开头，自动处理为相对路径
+            if (!/^https?:\/\//i.test(audioUrl) && !audioUrl.startsWith('//')) {
+                // 对于静态资源目录（如 github pages），自动补全为相对路径
+                if (!audioUrl.startsWith('./') && !audioUrl.startsWith('/')) {
+                    audioUrl = './' + audioUrl;
+                }
             }
-            
-            // 添加到播放列表
             playlist.push(audioUrl);
             updateSongListDisplay();
-            
-            // 自动启用控制按钮
             if (playlist.length > 0) {
                 playBtn.disabled = false;
                 prevBtn.disabled = false;
                 nextBtn.disabled = false;
             }
-            
             statusDisplay.textContent = '已添加到播放列表: ' + getSongName(audioUrl);
             musicUrlInput.value = '';
         });
-        
-        // 更新播放列表显示
+
         function updateSongListDisplay() {
             if (playlist.length === 0) {
                 songList.innerHTML = '<div class="song-item">暂无歌曲，请添加音乐</div>';
                 return;
             }
-            
             songList.innerHTML = '';
             playlist.forEach((url, index) => {
                 const item = document.createElement('div');
-                item.className = `song-item ${index === currentIndex ? 'active' : ''}`;
+                item.className = `song-item${index === currentIndex ? ' active' : ''}`;
                 item.textContent = getSongName(url);
-                item.addEventListener('click', () => {
-                    playIndex(index);
-                });
+                item.addEventListener('click', () => playIndex(index));
                 songList.appendChild(item);
             });
         }
-        
-        // 获取歌曲名称（从路径中提取）
+
         function getSongName(url) {
-            const parts = url.split('/');
-            return parts[parts.length - 1].replace(/\.mp3$/i, '');
+            let filename = url.split('/').pop().split('?')[0];
+            return filename.replace(/\.mp3$/i, '');
         }
-        
-        // 播放指定索引的歌曲
+
         function playIndex(index) {
             if (index < 0 || index >= playlist.length) return;
-            
             currentIndex = index;
             const url = playlist[index];
-            
-            // 更新播放列表显示
             updateSongListDisplay();
-            
-            // 重置歌词状态
             lyricsData = [];
             currentLine = -1;
             lyricsContainer.innerHTML = '<p>加载歌词中...</p>';
-            
-            // 加载音乐
             statusDisplay.textContent = '正在加载: ' + getSongName(url);
             audioPlayer.src = url;
-            
-            // 生成歌词文件路径
-            let lyricsUrl = url.replace(/\.mp3$/i, '.lrc');
+
+            let lyricsUrl = getLyricsUrl(url);
+
             debugInfo.textContent = `音乐地址: ${url}\n歌词地址: ${lyricsUrl}`;
-            
-            // 加载歌词
             loadLyrics(lyricsUrl);
-            
-            // 音乐加载成功
+
             audioPlayer.onloadedmetadata = () => {
                 statusDisplay.textContent = '正在播放: ' + getSongName(url);
                 audioPlayer.play();
@@ -315,19 +290,21 @@
                 pauseBtn.disabled = false;
                 stopBtn.disabled = false;
             };
-            
-            // 音乐加载错误
             audioPlayer.onerror = (e) => {
                 let errorMsg = `加载失败: ${getErrorMsg(e.target.error.code)}`;
                 statusDisplay.textContent = errorMsg;
                 resetControls();
             };
         }
-        
-        // 播放按钮
+
+        function getLyricsUrl(mp3Url) {
+            // 自动适配静态网址和相对/绝对路径
+            // 例: https://site.com/music/xxx.mp3 -> https://site.com/music/xxx.lrc
+            return mp3Url.replace(/\.mp3(\?.*)?$/i, '.lrc$1');
+        }
+
         playBtn.addEventListener('click', () => {
             if (currentIndex === -1 && playlist.length > 0) {
-                // 如果没有选中歌曲，默认播放第一首
                 playIndex(0);
             } else {
                 audioPlayer.play().catch(err => {
@@ -338,16 +315,14 @@
                 pauseBtn.disabled = false;
             }
         });
-        
-        // 暂停按钮
+
         pauseBtn.addEventListener('click', () => {
             audioPlayer.pause();
             statusDisplay.textContent = '已暂停: ' + getSongName(playlist[currentIndex]);
             pauseBtn.disabled = true;
             playBtn.disabled = false;
         });
-        
-        // 停止按钮
+
         stopBtn.addEventListener('click', () => {
             audioPlayer.pause();
             audioPlayer.currentTime = 0;
@@ -357,80 +332,54 @@
             playBtn.disabled = false;
             pauseBtn.disabled = true;
         });
-        
-        // 上一首
+
         prevBtn.addEventListener('click', () => {
             if (playlist.length === 0) return;
-            
             let index = currentIndex - 1;
             if (index < 0) index = playlist.length - 1;
-            
             playIndex(index);
         });
-        
-        // 下一首
+
         nextBtn.addEventListener('click', () => {
             playNextSong();
         });
-        
-        // 播放下一首（处理随机逻辑）
+
         function playNextSong() {
             if (playlist.length === 0) return;
-            
             let index;
             if (isRandom) {
-                // 随机模式
                 if (playlist.length === 1) {
-                    // 只有一首歌时直接播放
                     index = 0;
                 } else {
-                    // 确保不重复播放同一首
-                    if (playedIndices.length >= playlist.length - 1) {
-                        // 所有歌曲都播放过了，重置已播放列表
-                        playedIndices = [];
-                    }
-                    
-                    // 随机选择一个未播放过的索引
+                    if (playedIndices.length >= playlist.length - 1) playedIndices = [];
                     do {
                         index = Math.floor(Math.random() * playlist.length);
                     } while (index === currentIndex || playedIndices.includes(index));
-                    
                     playedIndices.push(currentIndex);
                 }
             } else {
-                // 顺序模式
                 index = currentIndex + 1;
                 if (index >= playlist.length) index = 0;
             }
-            
             playIndex(index);
         }
-        
-        // 随机播放切换
+
         randomBtn.addEventListener('click', () => {
             isRandom = !isRandom;
             randomBtn.classList.toggle('random-active', isRandom);
             statusDisplay.textContent = isRandom ? '已开启随机播放' : '已关闭随机播放';
-            
-            // 重置已播放列表
             playedIndices = [];
-            if (currentIndex !== -1) {
-                playedIndices.push(currentIndex);
-            }
+            if (currentIndex !== -1) playedIndices.push(currentIndex);
         });
-        
-        // 加载歌词文件
+
         function loadLyrics(lyricsUrl) {
             if (lyricsUrl.startsWith('file://') && window.location.protocol !== 'file:') {
-                lyricsContainer.innerHTML = '<p>注意：浏览器可能阻止本地歌词文件加载，请使用HTTP服务器打开</p>';
+                lyricsContainer.innerHTML = '<p>浏览器可能阻止本地歌词文件加载，请使用HTTP服务器或CDN/静态网址</p>';
                 return;
             }
-
             fetch(lyricsUrl)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP错误: ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
                     return response.text();
                 })
                 .then(text => {
@@ -441,49 +390,72 @@
                     console.error('歌词加载错误:', error);
                 });
         }
-        
-        // 解析LRC歌词
+
         function parseLyrics(lrcText) {
             lyricsData = [];
             const lines = lrcText.split('\n');
-            const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
-            
+            const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
             lines.forEach(line => {
-                const result = timeRegex.exec(line);
-                if (result) {
-                    // 解析时间
+                let result, lastTime = null;
+                while ((result = timeRegex.exec(line)) !== null) {
                     const minutes = parseInt(result[1], 10);
                     const seconds = parseInt(result[2], 10);
-                    const milliseconds = result[3].length === 2 ? parseInt(result[3], 10) * 10 : parseInt(result[3], 10);
-                    const time = minutes * 60 + seconds + milliseconds / 1000;
-                    
-                    // 获取歌词文本
-                    const text = line.replace(timeRegex, '').trim();
-                    if (text) {
-                        lyricsData.push({ time, text });
-                    }
-                } else if (line.trim()) {
-                    // 处理没有时间标签的歌词
-                    lyricsData.push({ 
-                        time: lyricsData.length > 0 ? lyricsData[lyricsData.length - 1].time + 5 : 0, 
-                        text: line.trim() 
-                    });
+                    const ms = result[3].length === 2 ? parseInt(result[3], 10) * 10 : parseInt(result[3], 10);
+                    const time = minutes * 60 + seconds + ms / 1000;
+                    lastTime = time;
+                }
+                let text = line.replace(timeRegex, '').trim();
+                if (lastTime !== null && text) {
+                    lyricsData.push({ time: lastTime, text });
+                } else if (text && lyricsData.length > 0) {
+                    lyricsData.push({ time: lyricsData[lyricsData.length - 1].time + 5, text });
                 }
             });
-            
-            // 按时间排序歌词
             lyricsData.sort((a, b) => a.time - b.time);
-            
-            // 显示歌词
             updateLyricsDisplay();
         }
-        
-        // 监听播放进度，更新歌词
+
         audioPlayer.ontimeupdate = updateLyrics;
-        
+        audioPlayer.onended = () => {
+            playNextSong();
+        };
+
         function updateLyrics() {
             const currentTime = audioPlayer.currentTime;
-            
-            // 找到当前应该显示的歌词行
+            let lineToShow = -1;
             for (let i = 0; i < lyricsData.length; i++) {
-                if (currentTime >= lyricsData[i].time
+                if (currentTime >= lyricsData[i].time) lineToShow = i;
+                else break;
+            }
+            if (lineToShow !== currentLine) {
+                currentLine = lineToShow;
+                updateLyricsDisplay();
+            }
+        }
+        function updateLyricsDisplay() {
+            if (lyricsData.length === 0) {
+                lyricsContainer.innerHTML = '<p>暂无歌词</p>';
+                return;
+            }
+            lyricsContainer.innerHTML = lyricsData.map((line, i) =>
+                `<p class="${i === currentLine ? 'active' : ''}">${line.text}</p>`
+            ).join('');
+        }
+        function getErrorMsg(code) {
+            // 1~4: MEDIA_ERR_ABORTED, MEDIA_ERR_NETWORK, MEDIA_ERR_DECODE, MEDIA_ERR_SRC_NOT_SUPPORTED
+            switch (code) {
+                case 1: return '用户终止了加载';
+                case 2: return '网络错误';
+                case 3: return '解码错误';
+                case 4: return '资源格式不受支持或未找到';
+                default: return '未知错误';
+            }
+        }
+        function resetControls() {
+            playBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
