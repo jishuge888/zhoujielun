@@ -3,477 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>音乐播放器 - 带随机播放功能（静态网址适配）</title>
+    <title>静态网址音乐播放器</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            background-color: #f0f2f5;
+            background: #f3f6fa;
+            margin: 0;
+            padding: 0;
         }
-        .player-container {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        .container {
+            max-width: 480px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 2rem 1.5rem 1.5rem 1.5rem;
         }
         h1 {
-            color: #2c3e50;
             text-align: center;
-            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: #232f40;
         }
-        .input-section {
-            margin-bottom: 1.5rem;
+        .song-list {
+            margin: 1rem 0;
+            padding: 0;
+            list-style: none;
+            max-height: 220px;
+            overflow-y: auto;
+            background: #f7faff;
+            border-radius: 8px;
+            border: 1px solid #e4eaf1;
         }
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #34495e;
-            font-weight: 500;
+        .song-item {
+            display: flex;
+            align-items: center;
+            padding: 0.7rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #e4eaf1;
+            transition: background 0.18s;
         }
-        #musicUrl {
-            width: 100%;
-            padding: 0.8rem;
-            border: 2px solid #bdc3c7;
+        .song-item:last-child { border-bottom: none; }
+        .song-item.active {
+            background: #e7f0fa;
+            color: #2576d2;
+            font-weight: bold;
+        }
+        .song-title {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .add-section {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .add-section input {
+            flex: 1;
+            padding: 0.6rem;
+            border: 1.5px solid #cdd6e2;
             border-radius: 6px;
             font-size: 1rem;
-            box-sizing: border-box;
-            transition: border-color 0.3s;
         }
-        #musicUrl:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-        .controls {
-            display: flex;
-            gap: 1rem;
-            margin: 1.5rem 0;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        button {
-            padding: 0.7rem 1.2rem;
+        .add-section button {
+            background: #2576d2;
+            color: #fff;
             border: none;
             border-radius: 6px;
-            background-color: #3498db;
-            color: white;
-            font-size: 1rem;
+            padding: 0.6rem 1.1rem;
             cursor: pointer;
-            transition: background-color 0.3s;
+            font-size: 1rem;
+            transition: background 0.2s;
         }
-        button:hover {
-            background-color: #2980b9;
+        .add-section button:hover { background: #195ca6; }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            margin: 1.2rem 0 0.2rem 0;
         }
-        button:disabled {
-            background-color: #bdc3c7;
-            cursor: not-allowed;
+        .controls button {
+            background: #f6f8fa;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 1.1rem;
+            color: #2576d2;
+            cursor: pointer;
+            transition: background 0.18s, color 0.18s;
+        }
+        .controls button.active,
+        .controls button:hover {
+            background: #2576d2;
+            color: #fff;
         }
         .status {
             text-align: center;
-            color: #7f8c8d;
-            margin: 1rem 0;
-            min-height: 1.5rem;
+            font-size: 0.98rem;
+            color: #888;
+            min-height: 1.3em;
         }
-        .lyrics-container {
-            margin: 2rem 0;
-            padding: 1.5rem;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            height: 200px;
-            overflow: auto;
-        }
-        #lyrics {
+        .footer {
+            margin-top: 1.2rem;
+            color: #aab5c7;
+            font-size: 0.92rem;
             text-align: center;
         }
-        #lyrics p {
-            margin: 0.8rem 0;
-            color: #666;
-            transition: color 0.3s, font-weight 0.3s;
-        }
-        #lyrics p.active {
-            color: #3498db;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-        .tips {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: #f8f9fa;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-        .tips h3 {
-            margin-top: 0;
-            color: #34495e;
-            font-size: 1rem;
-        }
-        .song-list-section {
-            margin: 1.5rem 0;
-        }
-        .song-list {
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid #eee;
-            border-radius: 6px;
-            padding: 0.5rem;
-        }
-        .song-item {
-            padding: 0.5rem;
-            margin: 0.3rem 0;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .song-item:hover {
-            background-color: #f0f7ff;
-        }
-        .song-item.active {
-            background-color: #e6f0fa;
-            font-weight: 500;
-        }
-        .random-active {
-            background-color: #e74c3c;
-        }
-        .random-active:hover {
-            background-color: #c0392b;
+        @media (max-width: 600px) {
+            .container { padding: 1rem 0.5rem 1rem 0.5rem;}
         }
     </style>
 </head>
 <body>
-    <div class="player-container">
-        <h1>音乐播放器 - 带随机播放（静态网址适配）</h1>
-        
-        <div class="input-section">
-            <label for="musicUrl">音乐文件地址（添加到播放列表，支持静态资源）</label>
-            <input type="text" id="musicUrl" placeholder="例：https://static.site.com/music/周杰伦 - 忍者.mp3 或 music/周杰伦 - 忍者.mp3">
-            <button id="addBtn" style="margin-top: 0.5rem;">添加到播放列表</button>
-        </div>
-        
-        <!-- 播放列表 -->
-        <div class="song-list-section">
-            <label>播放列表</label>
-            <div id="songList" class="song-list">
-                <div class="song-item">暂无歌曲，请添加音乐</div>
-            </div>
-        </div>
-        
-        <div class="controls">
-            <button id="prevBtn" disabled>上一首</button>
-            <button id="playBtn" disabled>播放</button>
-            <button id="pauseBtn" disabled>暂停</button>
-            <button id="stopBtn" disabled>停止</button>
-            <button id="nextBtn" disabled>下一首</button>
-            <button id="randomBtn">随机播放</button>
-        </div>
-        
-        <div class="status" id="status">请添加音乐到播放列表</div>
-        
-        <!-- 歌词显示区域 -->
-        <div class="lyrics-container">
-            <div id="lyrics">
-                <p>歌词将在这里显示</p>
-            </div>
-        </div>
-        
-        <audio id="audioPlayer"></audio>
-        
-        <div class="tips" style="margin-top:10px;">
-            <h3>调试信息：</h3>
-            <p id="debugInfo">未加载任何内容</p>
-        </div>
-        
-        <div class="tips">
-            <h3>使用说明：</h3>
-            <ul>
-                <li>输入音乐地址后点击"添加到播放列表"（支持绝对/相对/静态网址）</li>
-                <li>点击"随机播放"按钮开启/关闭随机模式</li>
-                <li>歌词文件需与音乐文件同名，扩展名为.lrc，放在相同目录下（静态网址也需如此）</li>
-                <li>本地文件建议通过HTTP服务器打开，静态网址如 GitHub Pages/CDN 也可用</li>
-            </ul>
-        </div>
+<div class="container">
+    <h1>静态网址音乐播放器</h1>
+    <div class="add-section">
+        <input type="text" id="musicUrl" placeholder="输入音乐地址或相对路径">
+        <button id="addBtn">添加</button>
     </div>
+    <ul id="songList" class="song-list">
+        <li class="song-item" style="color:#aaa;text-align:center;">暂无歌曲，请添加</li>
+    </ul>
+    <div class="controls">
+        <button id="prevBtn" title="上一首">&#9664;</button>
+        <button id="playBtn" title="播放">&#9654;</button>
+        <button id="pauseBtn" title="暂停">&#10073;&#10073;</button>
+        <button id="nextBtn" title="下一首">&#9654;&#9654;</button>
+        <button id="randomBtn" title="随机播放">&#128256;</button>
+    </div>
+    <div id="status" class="status"></div>
+    <audio id="audioPlayer"></audio>
+    <div class="footer">
+        支持静态资源、绝对/相对路径。点击歌曲可直接播放。<br>
+        如遇无法播放，请检查资源路径或跨域问题。
+    </div>
+</div>
+<script>
+const musicUrlInput = document.getElementById('musicUrl');
+const addBtn = document.getElementById('addBtn');
+const songList = document.getElementById('songList');
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const randomBtn = document.getElementById('randomBtn');
+const status = document.getElementById('status');
+const audioPlayer = document.getElementById('audioPlayer');
 
-    <script>
-        // 获取DOM元素
-        const musicUrlInput = document.getElementById('musicUrl');
-        const addBtn = document.getElementById('addBtn');
-        const songList = document.getElementById('songList');
-        const playBtn = document.getElementById('playBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const randomBtn = document.getElementById('randomBtn');
-        const statusDisplay = document.getElementById('status');
-        const audioPlayer = document.getElementById('audioPlayer');
-        const lyricsContainer = document.getElementById('lyrics');
-        const debugInfo = document.getElementById('debugInfo');
-        
-        let playlist = [];
-        let currentIndex = -1;
-        let isRandom = false;
-        let playedIndices = [];
-        let lyricsData = [];
-        let currentLine = -1;
+let playlist = [];
+let currentIndex = -1;
+let isRandom = false;
+let playedIndices = [];
 
-        // 添加音乐到播放列表
-        addBtn.addEventListener('click', () => {
-            let url = musicUrlInput.value.trim();
-            if (!url) {
-                statusDisplay.textContent = '请输入音乐地址';
-                return;
-            }
-            // 支持静态网址和相对路径
-            let audioUrl = url;
-            // 只在不是 http(s)://、//、/ 开头时补全相对路径
-            if (
-                !/^https?:\/\//i.test(audioUrl) &&
-                !audioUrl.startsWith('//') &&
-                !audioUrl.startsWith('/')
-            ) {
-                audioUrl = 'music/' + audioUrl;
-            }
-            playlist.push(audioUrl);
-            updateSongListDisplay();
-            if (playlist.length > 0) {
-                playBtn.disabled = false;
-                prevBtn.disabled = false;
-                nextBtn.disabled = false;
-            }
-            statusDisplay.textContent = '已添加到播放列表: ' + getSongName(audioUrl);
-            debugInfo.textContent = `已添加: ${audioUrl}`;
-            musicUrlInput.value = '';
+function getSongName(url) {
+    return decodeURIComponent(url.split('/').pop().split('?')[0].replace(/\.mp3$/i, ''));
+}
+function updateSongList() {
+    if (playlist.length === 0) {
+        songList.innerHTML = '<li class="song-item" style="color:#aaa;text-align:center;">暂无歌曲，请添加</li>';
+        return;
+    }
+    songList.innerHTML = '';
+    playlist.forEach((url, idx) => {
+        const li = document.createElement('li');
+        li.className = "song-item" + (idx === currentIndex ? " active" : "");
+        li.title = url;
+        li.innerHTML = `<span class="song-title">${getSongName(url)}</span>`;
+        li.onclick = () => playAt(idx);
+        songList.appendChild(li);
+    });
+}
+function normalizeUrl(url) {
+    url = url.trim();
+    if (!url) return '';
+    if (
+        url.startsWith('http://') ||
+        url.startsWith('https://') ||
+        url.startsWith('//') ||
+        url.startsWith('/')
+    ) return url;
+    // 适配静态站点的相对路径
+    return url;
+}
+function addSong() {
+    let url = musicUrlInput.value.trim();
+    if (!url) {
+        status.textContent = "请输入音乐地址";
+        return;
+    }
+    url = normalizeUrl(url);
+    playlist.push(url);
+    updateSongList();
+    status.textContent = "添加成功: " + getSongName(url);
+    if (playlist.length === 1) {
+        playAt(0);
+    }
+    musicUrlInput.value = '';
+}
+function playAt(idx) {
+    if (playlist.length === 0) return;
+    if (idx < 0 || idx >= playlist.length) idx = 0;
+    currentIndex = idx;
+    audioPlayer.src = playlist[currentIndex];
+    audioPlayer.play().catch(e=>{
+        status.textContent = "播放失败: " + (e.message || e);
+    });
+    updateSongList();
+    updateControls();
+    status.textContent = "正在播放: " + getSongName(playlist[currentIndex]);
+}
+function playCurrent() {
+    if (currentIndex < 0 && playlist.length > 0) playAt(0);
+    else if (currentIndex >= 0) {
+        audioPlayer.play().catch(e=>{
+            status.textContent = "播放失败: " + (e.message || e);
         });
-
-        // 更新播放列表显示
-        function updateSongListDisplay() {
-            if (playlist.length === 0) {
-                songList.innerHTML = '<div class="song-item">暂无歌曲，请添加音乐</div>';
-                return;
-            }
-            songList.innerHTML = '';
-            playlist.forEach((url, index) => {
-                const item = document.createElement('div');
-                item.className = `song-item${index === currentIndex ? ' active' : ''}`;
-                item.textContent = getSongName(url);
-                item.addEventListener('click', () => playIndex(index));
-                songList.appendChild(item);
-            });
-        }
-
-        // 获取歌曲名
-        function getSongName(url) {
-            let filename = url.split('/').pop().split('?')[0];
-            return filename.replace(/\.mp3$/i, '');
-        }
-
-        // 播放指定序号
-        function playIndex(index) {
-            if (index < 0 || index >= playlist.length) return;
-            currentIndex = index;
-            const url = playlist[index];
-            updateSongListDisplay();
-            lyricsData = [];
-            currentLine = -1;
-            lyricsContainer.innerHTML = '<p>加载歌词中...</p>';
-            statusDisplay.textContent = '正在加载: ' + getSongName(url);
-            audioPlayer.src = url;
-
-            let lyricsUrl = getLyricsUrl(url);
-
-            debugInfo.textContent = `音乐地址: ${url}\n歌词地址: ${lyricsUrl}`;
-            loadLyrics(lyricsUrl);
-
-            audioPlayer.onloadedmetadata = () => {
-                statusDisplay.textContent = '正在播放: ' + getSongName(url);
-                audioPlayer.play().catch(err => {
-                    statusDisplay.textContent = `播放失败: ${err.message}`;
-                });
-                playBtn.disabled = true;
-                pauseBtn.disabled = false;
-                stopBtn.disabled = false;
-            };
-            audioPlayer.onerror = (e) => {
-                let errorMsg = `加载失败: ${getErrorMsg(e.target.error.code)}，文件路径: ${audioPlayer.src}`;
-                statusDisplay.textContent = errorMsg;
-                debugInfo.textContent += `\n[错误] 加载失败: ${audioPlayer.src}`;
-                resetControls();
-            };
-        }
-
-        // 歌词路径
-        function getLyricsUrl(mp3Url) {
-            // 例: https://site.com/music/xxx.mp3 -> https://site.com/music/xxx.lrc
-            return mp3Url.replace(/\.mp3(\?.*)?$/i, '.lrc$1');
-        }
-
-        // 播放按钮事件
-        playBtn.addEventListener('click', () => {
-            if (currentIndex === -1 && playlist.length > 0) {
-                playIndex(0);
-            } else {
-                audioPlayer.play().catch(err => {
-                    statusDisplay.textContent = `播放失败: ${err.message}`;
-                });
-                statusDisplay.textContent = '正在播放: ' + getSongName(playlist[currentIndex]);
-                playBtn.disabled = true;
-                pauseBtn.disabled = false;
-            }
-        });
-
-        // 暂停按钮事件
-        pauseBtn.addEventListener('click', () => {
-            audioPlayer.pause();
-            statusDisplay.textContent = '已暂停: ' + getSongName(playlist[currentIndex]);
-            pauseBtn.disabled = true;
-            playBtn.disabled = false;
-        });
-
-        // 停止按钮事件
-        stopBtn.addEventListener('click', () => {
-            audioPlayer.pause();
-            audioPlayer.currentTime = 0;
-            statusDisplay.textContent = '已停止';
-            currentLine = -1;
-            updateLyricsDisplay();
-            playBtn.disabled = false;
-            pauseBtn.disabled = true;
-        });
-
-        // 上一首
-        prevBtn.addEventListener('click', () => {
-            if (playlist.length === 0) return;
-            let index = currentIndex - 1;
-            if (index < 0) index = playlist.length - 1;
-            playIndex(index);
-        });
-
-        // 下一首
-        nextBtn.addEventListener('click', () => {
-            playNextSong();
-        });
-
-        // 随机/顺序播放
-        randomBtn.addEventListener('click', () => {
-            isRandom = !isRandom;
-            randomBtn.classList.toggle('random-active', isRandom);
-            statusDisplay.textContent = isRandom ? '已开启随机播放' : '已关闭随机播放';
-            playedIndices = [];
-            if (currentIndex !== -1) playedIndices.push(currentIndex);
-        });
-
-        // 播放下一首
-        function playNextSong() {
-            if (playlist.length === 0) return;
-            let index;
-            if (isRandom) {
-                if (playlist.length === 1) {
-                    index = 0;
-                } else {
-                    if (playedIndices.length >= playlist.length - 1) playedIndices = [];
-                    do {
-                        index = Math.floor(Math.random() * playlist.length);
-                    } while (index === currentIndex || playedIndices.includes(index));
-                    playedIndices.push(currentIndex);
-                }
-            } else {
-                index = currentIndex + 1;
-                if (index >= playlist.length) index = 0;
-            }
-            playIndex(index);
-        }
-
-        // 加载歌词
-        function loadLyrics(lyricsUrl) {
-            if (lyricsUrl.startsWith('file://') && window.location.protocol !== 'file:') {
-                lyricsContainer.innerHTML = '<p>浏览器可能阻止本地歌词文件加载，请使用HTTP服务器或CDN/静态网址</p>';
-                return;
-            }
-            fetch(lyricsUrl)
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
-                    return response.text();
-                })
-                .then(text => {
-                    parseLyrics(text);
-                })
-                .catch(error => {
-                    lyricsContainer.innerHTML = `<p>歌词加载失败: ${error.message}</p>`;
-                    debugInfo.textContent += `\n[歌词加载失败] ${lyricsUrl}`;
-                });
-        }
-
-        // 解析歌词
-        function parseLyrics(lrcText) {
-            lyricsData = [];
-            const lines = lrcText.split('\n');
-            const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
-            lines.forEach(line => {
-                let result, lastTime = null;
-                while ((result = timeRegex.exec(line)) !== null) {
-                    const minutes = parseInt(result[1], 10);
-                    const seconds = parseInt(result[2], 10);
-                    const ms = result[3].length === 2 ? parseInt(result[3], 10) * 10 : parseInt(result[3], 10);
-                    const time = minutes * 60 + seconds + ms / 1000;
-                    lastTime = time;
-                }
-                let text = line.replace(timeRegex, '').trim();
-                if (lastTime !== null && text) {
-                    lyricsData.push({ time: lastTime, text });
-                } else if (text && lyricsData.length > 0) {
-                    lyricsData.push({ time: lyricsData[lyricsData.length - 1].time + 5, text });
-                }
-            });
-            lyricsData.sort((a, b) => a.time - b.time);
-            updateLyricsDisplay();
-        }
-
-        // 歌词联动
-        audioPlayer.ontimeupdate = updateLyrics;
-        audioPlayer.onended = () => {
-            playNextSong();
-        };
-
-        // 更新时间歌词显示
-        function updateLyrics() {
-            const currentTime = audioPlayer.currentTime;
-            let lineToShow = -1;
-            for (let i = 0; i < lyricsData.length; i++) {
-                if (currentTime >= lyricsData[i].time) lineToShow = i;
-                else break;
-            }
-            if (lineToShow !== currentLine) {
-                currentLine = lineToShow;
-                updateLyricsDisplay();
-            }
-        }
-        function updateLyricsDisplay() {
-            if (lyricsData.length === 0) {
-                lyricsContainer.innerHTML = '<p>暂无歌词</p>';
-                return;
-            }
-            lyricsContainer.innerHTML = lyricsData.map((line, i) =>
-                `<p class="${i === currentLine ? 'active' : ''}">${line.text}</p>`
-            ).join('');
-        }
-        // 音频错误解释
-        function getErrorMsg(code) {
-            switch (code) {
-                case 1: return '用户终止了加载';
-                case 2: return '网络错误';
-                case 3: return '解码错误';
-                case 4: return '资源格式不受支持或未找到';
-                default: return '未知错误';
-            }
-        }
-        // 控件重置
-        function resetControls() {
-            playBtn.disabled = false;
-            pauseBtn.disabled = true;
-            stopBtn.disabled = true;
-        }
-    </script>
+        status.textContent = "正在播放: " + getSongName(playlist[currentIndex]);
+    }
+}
+function pauseCurrent() {
+    audioPlayer.pause();
+    status.textContent = "已暂停: " + getSongName(playlist[currentIndex]);
+}
+function nextSong() {
+    if (playlist.length === 0) return;
+    let idx;
+    if (isRandom && playlist.length > 1) {
+        if (playedIndices.length >= playlist.length - 1) playedIndices = [];
+        do {
+            idx = Math.floor(Math.random() * playlist.length);
+        } while (idx === currentIndex || playedIndices.includes(idx));
+        playedIndices.push(currentIndex);
+    } else {
+        idx = (currentIndex + 1) % playlist.length;
+    }
+    playAt(idx);
+}
+function prevSong() {
+    if (playlist.length === 0) return;
+    let idx = currentIndex - 1;
+    if (idx < 0) idx = playlist.length - 1;
+    playAt(idx);
+}
+function updateControls() {
+    Array.from(songList.children).forEach((child, idx) => {
+        child.classList.toggle('active', idx === currentIndex);
+    });
+}
+addBtn.onclick = addSong;
+musicUrlInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") addSong();
+});
+playBtn.onclick = playCurrent;
+pauseBtn.onclick = pauseCurrent;
+nextBtn.onclick = nextSong;
+prevBtn.onclick = prevSong;
+randomBtn.onclick = () => {
+    isRandom = !isRandom;
+    randomBtn.classList.toggle("active", isRandom);
+    status.textContent = isRandom ? "已开启随机播放" : "已关闭随机播放";
+    playedIndices = [];
+    if (currentIndex !== -1) playedIndices.push(currentIndex);
+};
+// 自动播放下一首
+audioPlayer.onended = nextSong;
+// 状态初始化
+updateSongList();
+status.textContent = "请添加音乐到播放列表";
+</script>
 </body>
 </html>
