@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>手动输入专辑曲名 - 带歌词</title>
     <style>
+        /* 样式保持不变 */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 800px;
@@ -80,14 +81,10 @@
             background-color: #f8f9fa;
             border-radius: 8px;
             height: 200px;
-            overflow: hidden;
-            position: relative;
+            overflow: auto;
         }
         #lyrics {
-            position: absolute;
-            width: 100%;
             text-align: center;
-            transition: transform 0.3s ease;
         }
         #lyrics p {
             margin: 0.8rem 0;
@@ -119,7 +116,7 @@
         <h1>音乐播放器 - 带歌词显示</h1>
         
         <div class="input-section">
-            <label for="musicUrl">音乐文件地址如：爱在西元前/周杰伦 - 忍者 
+            <label for="musicUrl">音乐文件地址如：范特西/周杰伦 - 忍者.mp3</label>
             <input type="text" id="musicUrl" placeholder="例如：范特西/周杰伦 - 忍者.mp3">
         </div>
         
@@ -139,15 +136,21 @@
             </div>
         </div>
         
-        <audio id="audioPlayer" hidden></audio>
+        <audio id="audioPlayer" controls></audio>
+        
+        <!-- 调试信息显示（帮助排查问题） -->
+        <div class="tips" style="margin-top:10px;">
+            <h3>调试信息：</h3>
+            <p id="debugInfo">未加载任何内容</p>
+        </div>
         
         <div class="tips">
             <h3>使用说明：</h3>
             <ul>
-                <li>本地文件路径格式：例如：范特西/周杰伦 - 爱在西元前.mp3</li>
-                <li>歌词文件需与音乐文件同名，扩展名为.lrc（如：爱在西元前.lrc）</li>
-                <li>歌词文件需与音乐文件放在同一目录下</li>
-                <li>部分浏览器可能限制访问本地文件，建议使用网络URL测试</li>
+                <li>网络URL示例：https://example.com/music/周杰伦 - 忍者.mp3</li>
+                <li>本地文件需放在与HTML同目录的音乐文件夹中，例如：music/范特西/周杰伦 - 忍者.mp3</li>
+                <li>歌词文件需与音乐文件同名，扩展名为.lrc（如：周杰伦 - 忍者.lrc）</li>
+                <li>本地文件建议通过HTTP服务器打开（如VSCode的Live Server）</li>
             </ul>
         </div>
     </div>
@@ -162,9 +165,13 @@
         const statusDisplay = document.getElementById('status');
         const audioPlayer = document.getElementById('audioPlayer');
         const lyricsContainer = document.getElementById('lyrics');
+        const debugInfo = document.getElementById('debugInfo');
         
         let lyricsData = []; // 存储解析后的歌词数据
         let currentLine = -1; // 当前播放的歌词行
+        
+        // 修复：显示audio元素，方便浏览器原生控制和调试
+        audioPlayer.hidden = false;
         
         // 加载音乐和歌词
         loadBtn.addEventListener('click', () => {
@@ -176,29 +183,19 @@
 
             // 处理音乐文件路径
             let audioUrl = url;
-            if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
-                if (audioUrl.includes(':\\')) {
-                    audioUrl = 'file:///' + audioUrl.replace(/\\/g, '/');
-                } else if (audioUrl.startsWith('/')) {
-                    audioUrl = 'file://' + audioUrl;
-                } else {
-                    // 假设是相对路径
-                    audioUrl = 'file:///' + window.location.pathname.split('/').slice(0, -1).join('/') + '/' + audioUrl;
-                }
+            
+            // 修复：协议处理逻辑优化
+            if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://') && !audioUrl.startsWith('file://')) {
+                // 如果是本地相对路径，自动补全为当前目录下的路径
+                audioUrl = './' + audioUrl.replace(/^\/+/, '');
             }
 
             // 生成歌词文件路径（替换.mp3为.lrc）
-            let lyricsUrl = url.replace(/\.mp3$/i, '.lrc');
-            if (!lyricsUrl.startsWith('http://') && !lyricsUrl.startsWith('https://')) {
-                if (lyricsUrl.includes(':\\')) {
-                    lyricsUrl = 'file:///' + lyricsUrl.replace(/\\/g, '/');
-                } else if (lyricsUrl.startsWith('/')) {
-                    lyricsUrl = 'file://' + lyricsUrl;
-                } else {
-                    lyricsUrl = 'file:///' + window.location.pathname.split('/').slice(0, -1).join('/') + '/' + lyricsUrl;
-                }
-            }
+            let lyricsUrl = audioUrl.replace(/\.mp3$/i, '.lrc');
 
+            // 显示调试信息，帮助排查路径问题
+            debugInfo.textContent = `音乐地址: ${audioUrl}\n歌词地址: ${lyricsUrl}`;
+            
             // 重置歌词状态
             lyricsData = [];
             currentLine = -1;
@@ -219,9 +216,11 @@
                 stopBtn.disabled = false;
             };
             
-            // 音乐加载错误
+            // 音乐加载错误（增强错误信息）
             audioPlayer.onerror = (e) => {
-                statusDisplay.textContent = `音乐加载失败: ${getErrorMsg(e.target.error.code)}`;
+                let errorMsg = `音乐加载失败: ${getErrorMsg(e.target.error.code)}`;
+                errorMsg += "\n可能原因：路径错误、文件不存在、浏览器安全限制";
+                statusDisplay.textContent = errorMsg;
                 resetControls();
             };
             
@@ -231,7 +230,9 @@
 
         // 播放音乐
         playBtn.addEventListener('click', () => {
-            audioPlayer.play();
+            audioPlayer.play().catch(err => {
+                statusDisplay.textContent = `播放失败: ${err.message}`;
+            });
             statusDisplay.textContent = '正在播放...';
         });
 
@@ -246,31 +247,35 @@
             audioPlayer.pause();
             audioPlayer.currentTime = 0;
             statusDisplay.textContent = '已停止';
-            // 重置歌词显示
             currentLine = -1;
             updateLyricsDisplay();
         });
 
-        // 加载歌词文件
+        // 加载歌词文件（修复：添加错误处理）
         function loadLyrics(lyricsUrl) {
+            // 修复：本地文件跨域问题提示
+            if (lyricsUrl.startsWith('file://') && window.location.protocol !== 'file:') {
+                lyricsContainer.innerHTML = '<p>注意：浏览器可能阻止本地歌词文件加载，请使用HTTP服务器打开</p>';
+                return;
+            }
+
             fetch(lyricsUrl)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('歌词文件不存在');
+                        throw new Error(`HTTP错误: ${response.status}`);
                     }
                     return response.text();
                 })
                 .then(text => {
                     parseLyrics(text);
-                    statusDisplay.textContent = '音乐和歌词加载成功，可以播放了';
                 })
                 .catch(error => {
-                    lyricsContainer.innerHTML = `<p>歌词加载失败: ${error.message}</p>`;
+                    lyricsContainer.innerHTML = `<p>歌词加载失败: ${error.message}</p><p>请确保歌词文件存在且路径正确</p>`;
                     console.error('歌词加载错误:', error);
                 });
         }
 
-        // 解析LRC歌词
+        // 解析LRC歌词（修复：增强兼容性）
         function parseLyrics(lrcText) {
             lyricsData = [];
             const lines = lrcText.split('\n');
@@ -290,6 +295,9 @@
                     if (text) {
                         lyricsData.push({ time, text });
                     }
+                } else if (line.trim()) {
+                    // 处理没有时间标签的歌词
+                    lyricsData.push({ time: lyricsData.length > 0 ? lyricsData[lyricsData.length - 1].time + 5 : 0, text: line.trim() });
                 }
             });
             
@@ -336,9 +344,9 @@
                 const activeLine = lyricsContainer.querySelector('.active');
                 if (activeLine) {
                     const containerHeight = lyricsContainer.clientHeight;
-                    const lineHeight = activeLine.offsetHeight;
-                    const scrollTop = activeLine.offsetTop - containerHeight / 2 + lineHeight / 2;
-                    lyricsContainer.scrollTop = scrollTop;
+                    const lineTop = activeLine.offsetTop;
+                    const scrollPos = lineTop - containerHeight / 2 + activeLine.offsetHeight / 2;
+                    lyricsContainer.scrollTop = scrollPos;
                 }
             }
         }
@@ -350,14 +358,14 @@
             updateLyricsDisplay();
         };
 
-        // 错误信息处理
+        // 错误信息处理（修复：补充完整）
         function getErrorMsg(code) {
             switch(code) {
                 case 1: return "用户中止";
                 case 2: return "网络错误";
-                case 3: return "解码错误";
+                case 3: return "解码错误（格式不支持或文件损坏）";
                 case 4: return "不支持的音频格式";
-                default: return "未知错误";
+                default: return "未知错误（错误代码：" + code + "）";
             }
         }
 
@@ -370,3 +378,4 @@
     </script>
 </body>
 </html>
+
