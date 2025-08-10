@@ -109,7 +109,6 @@
             color: #34495e;
             font-size: 1rem;
         }
-        /* 新增歌曲列表样式 */
         .song-list-section {
             margin: 1.5rem 0;
         }
@@ -178,7 +177,7 @@
             </div>
         </div>
         
-        <audio id="audioPlayer" controls></audio>
+        <audio id="audioPlayer"></audio>
         
         <div class="tips" style="margin-top:10px;">
             <h3>调试信息：</h3>
@@ -219,8 +218,7 @@
         let lyricsData = [];
         let currentLine = -1;
 
-        audioPlayer.hidden = false;
-
+        // 添加音乐到播放列表
         addBtn.addEventListener('click', () => {
             let url = musicUrlInput.value.trim();
             if (!url) {
@@ -229,12 +227,13 @@
             }
             // 支持静态网址和相对路径
             let audioUrl = url;
-            // 如果不是以 http(s):// 或 // 开头，自动处理为相对路径
-            if (!/^https?:\/\//i.test(audioUrl) && !audioUrl.startsWith('//')) {
-                // 对于静态资源目录（如 github pages），自动补全为相对路径
-                if (!audioUrl.startsWith('./') && !audioUrl.startsWith('/')) {
-                    audioUrl = './' + audioUrl;
-                }
+            // 只在不是 http(s)://、//、/ 开头时补全相对路径
+            if (
+                !/^https?:\/\//i.test(audioUrl) &&
+                !audioUrl.startsWith('//') &&
+                !audioUrl.startsWith('/')
+            ) {
+                audioUrl = 'music/' + audioUrl;
             }
             playlist.push(audioUrl);
             updateSongListDisplay();
@@ -244,9 +243,11 @@
                 nextBtn.disabled = false;
             }
             statusDisplay.textContent = '已添加到播放列表: ' + getSongName(audioUrl);
+            debugInfo.textContent = `已添加: ${audioUrl}`;
             musicUrlInput.value = '';
         });
 
+        // 更新播放列表显示
         function updateSongListDisplay() {
             if (playlist.length === 0) {
                 songList.innerHTML = '<div class="song-item">暂无歌曲，请添加音乐</div>';
@@ -262,11 +263,13 @@
             });
         }
 
+        // 获取歌曲名
         function getSongName(url) {
             let filename = url.split('/').pop().split('?')[0];
             return filename.replace(/\.mp3$/i, '');
         }
 
+        // 播放指定序号
         function playIndex(index) {
             if (index < 0 || index >= playlist.length) return;
             currentIndex = index;
@@ -285,24 +288,28 @@
 
             audioPlayer.onloadedmetadata = () => {
                 statusDisplay.textContent = '正在播放: ' + getSongName(url);
-                audioPlayer.play();
+                audioPlayer.play().catch(err => {
+                    statusDisplay.textContent = `播放失败: ${err.message}`;
+                });
                 playBtn.disabled = true;
                 pauseBtn.disabled = false;
                 stopBtn.disabled = false;
             };
             audioPlayer.onerror = (e) => {
-                let errorMsg = `加载失败: ${getErrorMsg(e.target.error.code)}`;
+                let errorMsg = `加载失败: ${getErrorMsg(e.target.error.code)}，文件路径: ${audioPlayer.src}`;
                 statusDisplay.textContent = errorMsg;
+                debugInfo.textContent += `\n[错误] 加载失败: ${audioPlayer.src}`;
                 resetControls();
             };
         }
 
+        // 歌词路径
         function getLyricsUrl(mp3Url) {
-            // 自动适配静态网址和相对/绝对路径
             // 例: https://site.com/music/xxx.mp3 -> https://site.com/music/xxx.lrc
             return mp3Url.replace(/\.mp3(\?.*)?$/i, '.lrc$1');
         }
 
+        // 播放按钮事件
         playBtn.addEventListener('click', () => {
             if (currentIndex === -1 && playlist.length > 0) {
                 playIndex(0);
@@ -316,6 +323,7 @@
             }
         });
 
+        // 暂停按钮事件
         pauseBtn.addEventListener('click', () => {
             audioPlayer.pause();
             statusDisplay.textContent = '已暂停: ' + getSongName(playlist[currentIndex]);
@@ -323,6 +331,7 @@
             playBtn.disabled = false;
         });
 
+        // 停止按钮事件
         stopBtn.addEventListener('click', () => {
             audioPlayer.pause();
             audioPlayer.currentTime = 0;
@@ -333,6 +342,7 @@
             pauseBtn.disabled = true;
         });
 
+        // 上一首
         prevBtn.addEventListener('click', () => {
             if (playlist.length === 0) return;
             let index = currentIndex - 1;
@@ -340,10 +350,21 @@
             playIndex(index);
         });
 
+        // 下一首
         nextBtn.addEventListener('click', () => {
             playNextSong();
         });
 
+        // 随机/顺序播放
+        randomBtn.addEventListener('click', () => {
+            isRandom = !isRandom;
+            randomBtn.classList.toggle('random-active', isRandom);
+            statusDisplay.textContent = isRandom ? '已开启随机播放' : '已关闭随机播放';
+            playedIndices = [];
+            if (currentIndex !== -1) playedIndices.push(currentIndex);
+        });
+
+        // 播放下一首
         function playNextSong() {
             if (playlist.length === 0) return;
             let index;
@@ -364,14 +385,7 @@
             playIndex(index);
         }
 
-        randomBtn.addEventListener('click', () => {
-            isRandom = !isRandom;
-            randomBtn.classList.toggle('random-active', isRandom);
-            statusDisplay.textContent = isRandom ? '已开启随机播放' : '已关闭随机播放';
-            playedIndices = [];
-            if (currentIndex !== -1) playedIndices.push(currentIndex);
-        });
-
+        // 加载歌词
         function loadLyrics(lyricsUrl) {
             if (lyricsUrl.startsWith('file://') && window.location.protocol !== 'file:') {
                 lyricsContainer.innerHTML = '<p>浏览器可能阻止本地歌词文件加载，请使用HTTP服务器或CDN/静态网址</p>';
@@ -387,10 +401,11 @@
                 })
                 .catch(error => {
                     lyricsContainer.innerHTML = `<p>歌词加载失败: ${error.message}</p>`;
-                    console.error('歌词加载错误:', error);
+                    debugInfo.textContent += `\n[歌词加载失败] ${lyricsUrl}`;
                 });
         }
 
+        // 解析歌词
         function parseLyrics(lrcText) {
             lyricsData = [];
             const lines = lrcText.split('\n');
@@ -415,11 +430,13 @@
             updateLyricsDisplay();
         }
 
+        // 歌词联动
         audioPlayer.ontimeupdate = updateLyrics;
         audioPlayer.onended = () => {
             playNextSong();
         };
 
+        // 更新时间歌词显示
         function updateLyrics() {
             const currentTime = audioPlayer.currentTime;
             let lineToShow = -1;
@@ -441,8 +458,8 @@
                 `<p class="${i === currentLine ? 'active' : ''}">${line.text}</p>`
             ).join('');
         }
+        // 音频错误解释
         function getErrorMsg(code) {
-            // 1~4: MEDIA_ERR_ABORTED, MEDIA_ERR_NETWORK, MEDIA_ERR_DECODE, MEDIA_ERR_SRC_NOT_SUPPORTED
             switch (code) {
                 case 1: return '用户终止了加载';
                 case 2: return '网络错误';
@@ -451,6 +468,7 @@
                 default: return '未知错误';
             }
         }
+        // 控件重置
         function resetControls() {
             playBtn.disabled = false;
             pauseBtn.disabled = true;
