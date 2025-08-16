@@ -688,5 +688,142 @@
         animate();
     })();
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <body>
+    <div class="container">
+        <h1>周杰伦播放器</h1>
+        <button id="showAllBtn">列出全部MP3</button>
+        <ul id="songList" class="song-list">
+            <li class="song-item" style="color:#aaa;text-align:center;">暂无歌曲，请点击上方按钮</li>
+        </ul>
+        <div class="controls">
+            <button id="prevBtn" title="上一首">&#9664;</button>
+            <button id="playBtn" title="播放">&#9654;</button>
+            <button id="pauseBtn" title="暂停">&#10073;&#10073;</button>
+            <button id="nextBtn" title="下一首">&#9654;&#9654;</button>
+            <button id="randomBtn" title="随机播放">&#128256;</button>
+        </div>
+        <div id="status" class="status"></div>
+        <audio id="audioPlayer"></audio>
+        <div class="footer">
+            <br>如遇无法播放，请检查资源路径或跨域问题。
+        </div>
+    </div>
+    <script>
+    // 所有文件夹下的MP3文件列表（补充你的文件）
+    const allMp3Files = [
+        "范特西/周杰伦－忍者.mp3",
+        "范特西/周杰伦－简单爱.mp3",
+        "七里香/周杰伦－七里香.mp3",
+        "七里香/周杰伦－借口.mp3",
+        "依然范特西/夜曲.mp3",
+        "依然范特西/黑色毛衣.mp3"
+    ];
+
+    const showAllBtn = document.getElementById('showAllBtn');
+    const songList = document.getElementById('songList');
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const randomBtn = document.getElementById('randomBtn');
+    const status = document.getElementById('status');
+    const audioPlayer = document.getElementById('audioPlayer');
+
+    let playlist = [];
+    let currentIndex = -1;
+    let isRandom = false;
+    let playedIndices = [];
+
+    function getSongName(url) {
+        return decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, ''));
+    }
+    function updateSongList() {
+        if (playlist.length === 0) {
+            songList.innerHTML = '<li class="song-item" style="color:#aaa;text-align:center;">暂无歌曲，请点击上方按钮</li>';
+            return;
+        }
+        songList.innerHTML = '';
+        playlist.forEach((url, idx) => {
+            const li = document.createElement('li');
+            li.className = "song-item" + (idx === currentIndex ? " active" : "");
+            li.title = url;
+            li.innerHTML = `<span class="song-title">${url}</span>`;
+            li.onclick = () => playAt(idx);
+            songList.appendChild(li);
+        });
+    }
+    function playAt(idx) {
+        if (playlist.length === 0) return;
+        if (idx < 0 || idx >= playlist.length) idx = 0;
+        currentIndex = idx;
+        audioPlayer.src = playlist[currentIndex];
+        audioPlayer.load();
+        audioPlayer.oncanplay = () => {
+            audioPlayer.play().catch(e=>{
+                status.textContent = "播放失败: " + (e.message || e);
+            });
+            status.textContent = "正在播放: " + playlist[currentIndex];
+        };
+        audioPlayer.onerror = () => {
+            status.textContent = "加载失败: 资源不存在、路径错误或格式不支持";
+        };
+        updateSongList();
+    }
+    function playCurrent() {
+        if (currentIndex < 0 && playlist.length > 0) playAt(0);
+        else if (currentIndex >= 0) {
+            audioPlayer.play().catch(e=>{
+                status.textContent = "播放失败: " + (e.message || e);
+            });
+            status.textContent = "正在播放: " + playlist[currentIndex];
+        }
+    }
+    function pauseCurrent() {
+        audioPlayer.pause();
+        status.textContent = "已暂停: " + playlist[currentIndex];
+    }
+    function nextSong() {
+        if (playlist.length === 0) return;
+        let idx;
+        if (isRandom && playlist.length > 1) {
+            if (playedIndices.length >= playlist.length - 1) playedIndices = [];
+            do {
+                idx = Math.floor(Math.random() * playlist.length);
+            } while (idx === currentIndex || playedIndices.includes(idx));
+            playedIndices.push(currentIndex);
+        } else {
+            idx = (currentIndex + 1) % playlist.length;
+        }
+        playAt(idx);
+    }
+    function prevSong() {
+        if (playlist.length === 0) return;
+        let idx = currentIndex - 1;
+        if (idx < 0) idx = playlist.length - 1;
+        playAt(idx);
+    }
+    showAllBtn.onclick = function() {
+        playlist = [];
+        playlist.push(...allMp3Files);
+        currentIndex = -1;
+        updateSongList();
+        status.textContent = "已列出所有MP3文件，请点击歌曲播放";
+    };
+    playBtn.onclick = playCurrent;
+    pauseBtn.onclick = pauseCurrent;
+    nextBtn.onclick = nextSong;
+    prevBtn.onclick = prevSong;
+    randomBtn.onclick = () => {
+        isRandom = !isRandom;
+        randomBtn.classList.toggle("active", isRandom);
+        status.textContent = isRandom ? "已开启随机播放" : "已关闭随机播放";
+        playedIndices = [];
+        if (currentIndex !== -1) playedIndices.push(currentIndex);
+    };
+    audioPlayer.onended = nextSong;
+    updateSongList();
+    status.textContent = "请点击上方按钮列出MP3";
+    </script>
 </body>
 </html>
