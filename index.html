@@ -261,90 +261,6 @@
             <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
         </div>
         <h1>周杰伦播放器</h1>
-         <p class="description">点击下方按钮查看所有可用的MP3音乐文件</p>
-        
-        <button id="showAllBtn">
-            <i class="fas fa-music"></i>
-            列出全部MP3
-        </button>
-        
-        <div id="mp3List">
-            <div class="music-item">
-                <div class="counter">1</div>
-                <div class="music-icon"><i class="fas fa-file-audio"></i></div>
-                <div class="music-info">
-                    <div class="music-title">Summer Vibes</div>
-                    <div class="music-details">
-                        <span class="artist">Ocean Waves</span>
-                        <span class="album">Relaxing Sounds</span>
-                        <span class="duration">3:45</span>
-                        <span class="file-size">4.2 MB</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="music-item">
-                <div class="counter">2</div>
-                <div class="music-icon"><i class="fas fa-file-audio"></i></div>
-                <div class="music-info">
-                    <div class="music-title">Midnight Drive</div>
-                    <div class="music-details">
-                        <span class="artist">Synthwave Collective</span>
-                        <span class="album">Retro Dreams</span>
-                        <span class="duration">4:20</span>
-                        <span class="file-size">5.1 MB</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="music-item">
-                <div class="counter">3</div>
-                <div class="music-icon"><i class="fas fa-file-audio"></i></div>
-                <div class="music-info">
-                    <div class="music-title">Mountain Echo</div>
-                    <div class="music-details">
-                        <span class="artist">Nature Sounds</span>
-                        <span class="album">Wilderness Journeys</span>
-                        <span class="duration">6:15</span>
-                        <span class="file-size">7.8 MB</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="music-item">
-                <div class="counter">4</div>
-                <div class="music-icon"><i class="fas fa-file-audio"></i></div>
-                <div class="music-info">
-                    <div class="music-title">Urban Jungle</div>
-                    <div class="music-details">
-                        <span class="artist">City Beats</span>
-                        <span class="album">Metropolitan Life</span>
-                        <span class="duration">3:30</span>
-                        <span class="file-size">4.0 MB</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="music-item">
-                <div class="counter">5</div>
-                <div class="music-icon"><i class="fas fa-file-audio"></i></div>
-                <div class="music-info">
-                    <div class="music-title">Desert Wind</div>
-                    <div class="music-details">
-                        <span class="artist">Sandy Dunes</span>
-                        <span class="album">Arid Landscapes</span>
-                        <span class="duration">5:45</span>
-                        <span class="file-size">6.5 MB</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <footer>
-            <p>静态MP3列表展示器 | 共5首曲目 | 点击按钮查看全部</p>
-        </footer>
-    </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const showButton = document.getElementById('showAllBtn');
@@ -357,12 +273,7 @@
                     showButton.style.background = 'linear-gradient(45deg, #4CAF50, #2E7D32)';
                 } else {
                     mp3List.style.display = 'none';
-                    showButton.innerHTML = '<i class="fas fa-music"></i> 列出全部MP3';
-                    showButton.style.background = 'linear-gradient(45deg, #4361ee, #3a0ca3)';
-                }
-            });
-        });
-    </script>
+                    showButton.innerHT
         
         
         <div class="add-section">
